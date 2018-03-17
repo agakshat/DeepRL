@@ -96,7 +96,7 @@ def dqn_pixel_atari(name):
     config.history_length = 4
     #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
     #                                    history_length=config.history_length)
-    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=4, normalized_state=False,
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=False,
                                         history_length=config.history_length)
     action_dim = config.task_fn().action_dim
     config.optimizer_fn = lambda params: torch.optim.RMSprop(params, lr=0.00025, alpha=0.95, eps=0.01)
@@ -140,7 +140,8 @@ def dqn_ram_atari(name):
 def async_pixel_atari(name):
     config = Config()
     config.history_length = 1
-    config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, frame_size=42)
+    #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, frame_size=42)
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, frame_size=42)
     task = config.task_fn()
     config.optimizer_fn = lambda params: torch.optim.Adam(params, lr=0.0001)
     config.network_fn = lambda: OpenAIConvNet(
@@ -360,13 +361,15 @@ def categorical_dqn_cart_pole():
 def categorical_dqn_pixel_atari(name):
     config = Config()
     config.history_length = 4
-    config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #                                    history_length=config.history_length)
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=False,
                                         history_length=config.history_length)
     action_dim = config.task_fn().action_dim
     config.optimizer_fn = lambda params: torch.optim.Adam(params, lr=0.00025, eps=0.01 / 32)
     config.network_fn = lambda: CategoricalConvNet(config.history_length, action_dim, config.categorical_n_atoms, gpu=0)
     config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
-    config.replay_fn = lambda: Replay(memory_size=1000000, batch_size=32, dtype=np.uint8)
+    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
     config.reward_shift_fn = lambda r: np.sign(r)
     config.discount = 0.99
     config.target_network_update_freq = 10000
@@ -375,8 +378,8 @@ def categorical_dqn_pixel_atari(name):
     config.test_interval = 10
     config.test_repetitions = 1
     config.double_q = False
-    config.categorical_v_max = 10
-    config.categorical_v_min = -10
+    config.categorical_v_max = 120
+    config.categorical_v_min = -120
     config.categorical_n_atoms = 51
     run_episodes(CategoricalDQNAgent(config))
 
@@ -433,10 +436,10 @@ if __name__ == '__main__':
     # n_step_dqn_cart_pole()
 
     # dqn_pixel_atari('PongNoFrameskip-v4')
-    dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
-    # categorical_dqn_pixel_atari('PongNoFrameskip-v4')
+    # dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
+    categorical_dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
     # n_step_dqn_pixel_atari('PongNoFrameskip-v4')
-    # async_pixel_atari('PongNoFrameskip-v4')
+    # async_pixel_atari('SpaceFortress-autoturn-image-v0')
     # a3c_pixel_atari('PongNoFrameskip-v4')
     # a2c_pixel_atari('PongNoFrameskip-v4')
 
