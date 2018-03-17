@@ -94,14 +94,16 @@ def a2c_cart_pole():
 def dqn_pixel_atari(name):
     config = Config()
     config.history_length = 4
-    config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #                                    history_length=config.history_length)
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=4, normalized_state=False,
                                         history_length=config.history_length)
     action_dim = config.task_fn().action_dim
     config.optimizer_fn = lambda params: torch.optim.RMSprop(params, lr=0.00025, alpha=0.95, eps=0.01)
     config.network_fn = lambda: NatureConvNet(config.history_length, action_dim, gpu=0)
     # config.network_fn = lambda: DuelingNatureConvNet(config.history_length, action_dim)
     config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
-    config.replay_fn = lambda: Replay(memory_size=1000000, batch_size=32, dtype=np.uint8)
+    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
     config.reward_shift_fn = lambda r: np.sign(r)
     config.discount = 0.99
     config.target_network_update_freq = 10000
@@ -423,7 +425,7 @@ if __name__ == '__main__':
     # categorical_dqn_cart_pole()
     # async_cart_pole()
     # a3c_cart_pole()
-    a2c_cart_pole()
+    # a2c_cart_pole()
     # a3c_continuous()
     # p3o_continuous()
     # d3pg_continuous()
@@ -431,6 +433,7 @@ if __name__ == '__main__':
     # n_step_dqn_cart_pole()
 
     # dqn_pixel_atari('PongNoFrameskip-v4')
+    dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
     # categorical_dqn_pixel_atari('PongNoFrameskip-v4')
     # n_step_dqn_pixel_atari('PongNoFrameskip-v4')
     # async_pixel_atari('PongNoFrameskip-v4')

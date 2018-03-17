@@ -167,6 +167,7 @@ class ProcessFrame(gym.Wrapper):
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
+        #self.env._render()
         return self.process(obs), reward, done, info
 
     def reset(self):

@@ -9,6 +9,7 @@ import numpy as np
 from .atari_wrapper import *
 import multiprocessing as mp
 import sys
+import spacefortress.gym
 
 class BasicTask:
     def __init__(self, max_steps=sys.maxsize):
@@ -64,6 +65,28 @@ class PixelAtari(BasicTask):
         env = MaxAndSkipEnv(env, skip=frame_skip)
         if 'FIRE' in env.unwrapped.get_action_meanings():
             env = FireResetEnv(env)
+        env = ProcessFrame(env, frame_size)
+        if normalized_state:
+            env = NormalizeFrame(env)
+        self.env = StackFrame(env, history_length)
+        self.action_dim = self.env.action_space.n
+
+    def normalize_state(self, state):
+        return np.asarray(state) / 255.0
+
+class PixelSpaceFortress(BasicTask):
+    def __init__(self, name, no_op, frame_skip, normalized_state=True,
+                 frame_size=84, max_steps=10000, history_length=1):
+        BasicTask.__init__(self, max_steps)
+        self.normalized_state = normalized_state
+        self.name = name
+        env = gym.make(name)
+        #assert 'NoFrameskip' in env.spec.id
+        #env = EpisodicLifeEnv(env)
+        #env = NoopResetEnv(env, noop_max=no_op)
+        #env = MaxAndSkipEnv(env, skip=frame_skip)
+        #if 'FIRE' in env.unwrapped.get_action_meanings():
+        #    env = FireResetEnv(env)
         env = ProcessFrame(env, frame_size)
         if normalized_state:
             env = NormalizeFrame(env)
