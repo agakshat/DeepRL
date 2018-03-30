@@ -26,7 +26,7 @@ def run_episodes(agent):
             ep, reward, fort_kill, avg_reward, agent.total_steps, step))
         config.logger.scalar_summary('reward',reward,ep)
         config.logger.scalar_summary('fort_kill',fort_kill,ep)
-        
+
         if config.save_interval and ep % config.save_interval == 0:
             with open('data/%s-%s-online-stats-%s.bin' % (
                     agent_type, config.tag, agent.task.name), 'wb') as f:

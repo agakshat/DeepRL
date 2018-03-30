@@ -92,7 +92,7 @@ def a2c_cart_pole():
     config.rollout_length = 20
     run_iterations(A2CAgent(config))
 
-def dqn_pixel_atari(name):
+def dqn_pixel_atari(name,args):
     config = Config()
     config.history_length = 4
     #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
@@ -110,7 +110,7 @@ def dqn_pixel_atari(name):
     config.target_network_update_freq = 10000
     config.max_episode_length = 0
     config.exploration_steps= 50000
-    config.logger = Logger('./log', logger)
+    config.logger = Logger(args.log_dir, logger)
     config.test_interval = 10
     config.test_repetitions = 1
     # config.double_q = True
@@ -417,7 +417,7 @@ def categorical_dqn_cart_pole():
     config.categorical_n_atoms = 50
     run_episodes(CategoricalDQNAgent(config))
 
-def categorical_dqn_pixel_atari(name):
+def categorical_dqn_pixel_atari(name,args):
     config = Config()
     config.history_length = 4
     #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
@@ -433,7 +433,7 @@ def categorical_dqn_pixel_atari(name):
     config.discount = 0.99
     config.target_network_update_freq = 10000
     config.exploration_steps= 50000
-    config.logger = Logger('./log', logger)
+    config.logger = Logger(args.log_dir, logger)
     config.test_interval = 10
     config.test_repetitions = 1
     config.double_q = True
@@ -535,13 +535,16 @@ def n_step_dqn_pixel_atari(name):
 if __name__ == '__main__':
     mkdir('data')
     mkdir('data/video')
-    mkdir('log')
     os.system('export OMP_NUM_THREADS=1')
     # logger.setLevel(logging.DEBUG)
     logger.setLevel(logging.INFO)
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument('--mode', type=int, default=1,
                         help='1/2/3/4:Auto/CategAuto/Expl/CategExpl')
+    parser.add_argument('--log-dir', default='./logs/',
+                        help='directory to save agent logs (default: ./logs/')
+    parser.add_argument('--save-dir', default='./trained_models/',
+                        help='directory to save agent logs (default: ./trained_models/)')
     args = parser.parse_args()
     # dqn_cart_pole()
     # categorical_dqn_cart_pole()
@@ -556,13 +559,13 @@ if __name__ == '__main__':
 
     # dqn_pixel_atari('PongNoFrameskip-v4')
     if args.mode==1:
-        dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0')
+        dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0',args)
     elif args.mode==2:
-        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0')
+        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0',args)
     elif args.mode==3:
-        dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0')
+        dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0',args)
     elif args.mode==4:
-        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0')
+        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0',args)
     #test_categorical_dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
     # n_step_dqn_pixel_atari('PongNoFrameskip-v4')
     # async_pixel_atari('SpaceFortress-autoturn-image-v0')
