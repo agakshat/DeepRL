@@ -160,18 +160,20 @@ class ProcessFrame(gym.Wrapper):
         self.observation_space = spaces.Box(low=0, high=255, shape=(1, frame_size, frame_size), dtype=np.uint8)
 
     def process(self, obs):
-        obs = color.rgb2gray(obs)
+        #obs = color.rgb2gray(obs)
         obs = transform.resize(obs, (self.frame_size, self.frame_size), mode='constant')
-        obs = (255 * obs).astype(np.uint8).reshape((1, ) + obs.shape)
+        obs = obs.astype(np.uint8).reshape((1, ) + obs.shape)
         return obs
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
-        #self.env._render()
         return self.process(obs), reward, done, info
 
     def reset(self):
         return self.process(self.env.reset())
+
+    def render(self):
+        self.env.render()
 
 class NormalizeFrame(gym.Wrapper):
     def __init__(self, env=None):
@@ -186,6 +188,9 @@ class NormalizeFrame(gym.Wrapper):
 
     def reset(self):
         return self._normalize(self.env.reset())
+
+    def render(self):
+        self.env.render()
 
 class StackFrame(gym.Wrapper):
     def __init__(self, env=None, history_length=1):
@@ -203,3 +208,6 @@ class StackFrame(gym.Wrapper):
         self.buffer.pop(0)
         self.buffer.append(state)
         return np.asarray(np.vstack(self.buffer)), reward, done, info
+
+    def render(self):
+        self.env.render()

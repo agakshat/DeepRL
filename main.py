@@ -9,6 +9,7 @@ from agent import *
 from component import *
 from utils import *
 import model.action_conditional_video_prediction as acvp
+import argparse
 
 def dqn_cart_pole():
     config = Config()
@@ -96,6 +97,31 @@ def dqn_pixel_atari(name):
     config.history_length = 4
     #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
     #                                    history_length=config.history_length)
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=True,
+                                        history_length=config.history_length)
+    action_dim = config.task_fn().action_dim
+    config.optimizer_fn = lambda params: torch.optim.RMSprop(params, lr=0.00025, alpha=0.95, eps=0.01)
+    config.network_fn = lambda: NatureConvNet(config.history_length, action_dim, gpu=0)
+    # config.network_fn = lambda: DuelingNatureConvNet(config.history_length, action_dim)
+    config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
+    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
+    config.reward_shift_fn = lambda r: np.sign(r)
+    config.discount = 0.99
+    config.target_network_update_freq = 10000
+    config.max_episode_length = 0
+    config.exploration_steps= 50000
+    config.logger = Logger('./log', logger)
+    config.test_interval = 10
+    config.test_repetitions = 1
+    # config.double_q = True
+    config.double_q = True
+    run_episodes(DQNAgent(config))
+
+def test_dqn_pixel_atari(name):
+    config = Config()
+    config.history_length = 4
+    #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #                                    history_length=config.history_length)
     config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=False,
                                         history_length=config.history_length)
     action_dim = config.task_fn().action_dim
@@ -114,7 +140,40 @@ def dqn_pixel_atari(name):
     config.test_repetitions = 1
     # config.double_q = True
     config.double_q = False
-    run_episodes(DQNAgent(config))
+    agent = DQNAgent(config)
+    actorState = torch.load('DQNAgent-vanilla-model-SpaceFortress-autoturn-image-v0.bin',map_location = lambda storage, loc: storage)
+    agent.learning_network.load_state_dict(actorState)
+    state = agent.task.reset()
+    total_reward = 0.0
+    steps = 0
+    fortress_destroyed = 0
+    total_fortress_destroyed = 0
+    episode_reward = 0
+    num_episodes = 0
+    while steps<2000:
+        value = agent.learning_network.predict(np.stack([agent.task.normalize_state(state)])).squeeze(0).data
+        #value = (value * agent.atoms).sum(-1).cpu().numpy().flatten()
+        action = agent.policy.sample(value)
+        next_state, reward, done, info = agent.task.step(action)
+        #print("Reward: ",reward)
+        agent.task.render()
+        if info:
+            fortress_destroyed += 1
+        episode_reward += reward
+        reward = agent.config.reward_shift_fn(reward)
+        steps += 1
+        state = next_state
+        if done:
+            num_episodes += 1
+            total_reward += episode_reward
+            total_fortress_destroyed += fortress_destroyed
+            state = agent.task.reset()
+            print("Episode Reward: |Last {} | Average {} || Fortress: |Last {} | Average {:.3f}".
+                    format(episode_reward,total_reward/num_episodes,fortress_destroyed,
+                            total_fortress_destroyed/num_episodes))
+            episode_reward = 0
+            fortress_destroyed = 0
+    #run_episodes(DQNAgent(config))
 
 def dqn_ram_atari(name):
     config = Config()
@@ -363,6 +422,31 @@ def categorical_dqn_pixel_atari(name):
     config.history_length = 4
     #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
     #                                    history_length=config.history_length)
+    config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=True,
+                                        history_length=config.history_length)
+    action_dim = config.task_fn().action_dim
+    config.optimizer_fn = lambda params: torch.optim.Adam(params, lr=0.00025, eps=0.01 / 32)
+    config.network_fn = lambda: CategoricalConvNet(config.history_length, action_dim, config.categorical_n_atoms, gpu=0)
+    config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
+    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
+    config.reward_shift_fn = lambda r: np.sign(r)
+    config.discount = 0.99
+    config.target_network_update_freq = 10000
+    config.exploration_steps= 50000
+    config.logger = Logger('./log', logger)
+    config.test_interval = 10
+    config.test_repetitions = 1
+    config.double_q = True
+    config.categorical_v_max = 20
+    config.categorical_v_min = -20
+    config.categorical_n_atoms = 51
+    run_episodes(CategoricalDQNAgent(config))
+
+def test_categorical_dqn_pixel_atari(name):
+    config = Config()
+    config.history_length = 4
+    #config.task_fn = lambda: PixelAtari(name, no_op=30, frame_skip=4, normalized_state=False,
+    #                                    history_length=config.history_length)
     config.task_fn = lambda: PixelSpaceFortress(name, no_op=30, frame_skip=1, normalized_state=False,
                                         history_length=config.history_length)
     action_dim = config.task_fn().action_dim
@@ -381,7 +465,39 @@ def categorical_dqn_pixel_atari(name):
     config.categorical_v_max = 120
     config.categorical_v_min = -120
     config.categorical_n_atoms = 51
-    run_episodes(CategoricalDQNAgent(config))
+    agent = CategoricalDQNAgent(config)
+    actorState = torch.load('DQNAgent-vanilla-model-SpaceFortress-autoturn-image-v0.bin',map_location = lambda storage, loc: storage)
+    agent.learning_network.load_state_dict(actorState)
+    state = agent.task.reset()
+    total_reward = 0.0
+    steps = 0
+    fortress_destroyed = 0
+    total_fortress_destroyed = 0
+    episode_reward = 0
+    num_episodes = 0
+    while steps<2000:
+        value = agent.learning_network.predict(np.stack([agent.task.normalize_state(state)])).squeeze(0).data
+        value = (value * agent.atoms).sum(-1).cpu().numpy().flatten()
+        action = agent.policy.sample(value)
+        next_state, reward, done, info = agent.task.step(action)
+        #print("Reward: ",reward)
+        agent.task.render()
+        if info:
+            fortress_destroyed += 1
+        episode_reward += reward
+        reward = agent.config.reward_shift_fn(reward)
+        steps += 1
+        state = next_state
+        if done:
+            num_episodes += 1
+            total_reward += episode_reward
+            total_fortress_destroyed += fortress_destroyed
+            state = agent.task.reset()
+            print("Episode Reward: |Last {} | Average {} || Fortress: |Last {} | Average {:.3f}".
+                    format(episode_reward,total_reward/num_episodes,fortress_destroyed,
+                            total_fortress_destroyed/num_episodes))
+            episode_reward = 0
+            fortress_destroyed = 0
 
 def n_step_dqn_cart_pole():
     config = Config()
@@ -423,7 +539,10 @@ if __name__ == '__main__':
     os.system('export OMP_NUM_THREADS=1')
     # logger.setLevel(logging.DEBUG)
     logger.setLevel(logging.INFO)
-
+    parser = argparse.ArgumentParser(description='RL')
+    parser.add_argument('--mode', type=int, default=1,
+                        help='1/2/3/4:Auto/CategAuto/Expl/CategExpl')
+    args = parser.parse_args()
     # dqn_cart_pole()
     # categorical_dqn_cart_pole()
     # async_cart_pole()
@@ -436,8 +555,15 @@ if __name__ == '__main__':
     # n_step_dqn_cart_pole()
 
     # dqn_pixel_atari('PongNoFrameskip-v4')
-    # dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
-    categorical_dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
+    if args.mode==1:
+        dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0')
+    elif args.mode==2:
+        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyautoturn-image-v0')
+    elif args.mode==3:
+        dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0')
+    elif args.mode==4:
+        categorical_dqn_pixel_atari('SpaceFortress-nopenaltyexplode-image-v0')
+    #test_categorical_dqn_pixel_atari('SpaceFortress-autoturn-image-v0')
     # n_step_dqn_pixel_atari('PongNoFrameskip-v4')
     # async_pixel_atari('SpaceFortress-autoturn-image-v0')
     # a3c_pixel_atari('PongNoFrameskip-v4')

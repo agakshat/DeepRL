@@ -18,13 +18,15 @@ def run_episodes(agent):
     agent_type = agent.__class__.__name__
     while True:
         ep += 1
-        reward, step = agent.episode()
+        reward, step, fort_kill = agent.episode()
         rewards.append(reward)
         steps.append(step)
         avg_reward = np.mean(rewards[-window_size:])
-        config.logger.info('episode %d, reward %f, avg reward %f, total steps %d, episode step %d' % (
-            ep, reward, avg_reward, agent.total_steps, step))
-
+        config.logger.info('episode %d, reward %f, fort_kill %f, avg reward %f, total steps %d, episode step %d' % (
+            ep, reward, fort_kill, avg_reward, agent.total_steps, step))
+        config.logger.scalar_summary('reward',reward,ep)
+        config.logger.scalar_summary('fort_kill',fort_kill,ep)
+        
         if config.save_interval and ep % config.save_interval == 0:
             with open('data/%s-%s-online-stats-%s.bin' % (
                     agent_type, config.tag, agent.task.name), 'wb') as f:

@@ -33,6 +33,9 @@ class BasicTask:
     def random_action(self):
         return self.env.action_space.sample()
 
+    def render(self):
+        self.env.render()
+
 class ClassicalControl(BasicTask):
     def __init__(self, name='CartPole-v0', max_steps=200):
         BasicTask.__init__(self, max_steps)
@@ -87,10 +90,10 @@ class PixelSpaceFortress(BasicTask):
         #env = MaxAndSkipEnv(env, skip=frame_skip)
         #if 'FIRE' in env.unwrapped.get_action_meanings():
         #    env = FireResetEnv(env)
-        env = ProcessFrame(env, frame_size)
+        env = ProcessFrame(env, frame_size) #resizes
         if normalized_state:
-            env = NormalizeFrame(env)
-        self.env = StackFrame(env, history_length)
+            env = NormalizeFrame(env) #divs by 255
+        self.env = StackFrame(env, history_length) # stacks it up
         self.action_dim = self.env.action_space.n
 
     def normalize_state(self, state):

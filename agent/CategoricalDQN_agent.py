@@ -35,6 +35,7 @@ class CategoricalDQNAgent:
         episode_start_time = time.time()
         state = self.task.reset()
         total_reward = 0.0
+        total_info = 0.0
         steps = 0
         while True:
             value = self.learning_network.predict(np.stack([self.task.normalize_state(state)])).squeeze(0).data
@@ -47,8 +48,9 @@ class CategoricalDQNAgent:
                 action = np.random.randint(0, len(value))
             else:
                 action = self.policy.sample(value)
-            next_state, reward, done, _ = self.task.step(action)
+            next_state, reward, done, info = self.task.step(action)
             total_reward += reward
+            total_info += info
             reward = self.config.reward_shift_fn(reward)
             if not deterministic:
                 self.replay.feed([state, action, reward, next_state, int(done)])
@@ -101,7 +103,7 @@ class CategoricalDQNAgent:
         episode_time = time.time() - episode_start_time
         self.config.logger.debug('episode steps %d, episode time %f, time per step %f' %
                           (steps, episode_time, episode_time / float(steps)))
-        return total_reward, steps
+        return total_reward, steps, total_info
 
     def save(self, file_name):
         with open(file_name, 'wb') as f:
