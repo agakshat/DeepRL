@@ -34,8 +34,8 @@ class NatureConvNetGRU(nn.Module, VanillaNet):
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
         self.fc4 = nn.Linear(7 * 7 * 64, 512)
-        self.gru = nn.GRUCell(512,512)
-        self.fc5 = nn.Linear(512, n_actions)
+        self.gru = nn.GRUCell(512,128)
+        self.fc5 = nn.Linear(128, n_actions)
         BasicNet.__init__(self, gpu, LSTM=True)
 
         nn.init.orthogonal(self.gru.weight_ih)
@@ -43,7 +43,7 @@ class NatureConvNetGRU(nn.Module, VanillaNet):
         self.gru.bias_ih.data.fill_(0)
         self.gru.bias_hh.data.fill_(0)
 
-        self.h = self.variable(np.zeros((1, 512)))
+        self.h = self.variable(np.zeros((1, 128)))
 
     def forward(self, x):
         x = self.variable(x)
@@ -199,8 +199,8 @@ class CategoricalConvNetGRU(nn.Module, CategoricalNet):
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
         self.fc4 = nn.Linear(7 * 7 * 64, 512)
-        self.gru = nn.GRUCell(512,512)
-        self.fc_categorical = nn.Linear(512, n_actions * n_atoms)
+        self.gru = nn.GRUCell(512,128)
+        self.fc_categorical = nn.Linear(128, n_actions * n_atoms)
         self.n_actions = n_actions
         self.n_atoms = n_atoms
         BasicNet.__init__(self, gpu)
@@ -210,7 +210,7 @@ class CategoricalConvNetGRU(nn.Module, CategoricalNet):
         self.gru.bias_ih.data.fill_(0)
         self.gru.bias_hh.data.fill_(0)
 
-        self.h = self.variable(np.zeros((1, 512)))
+        self.h = self.variable(np.zeros((1, 128)))
 
     def forward(self, x):
         x = self.variable(x)
