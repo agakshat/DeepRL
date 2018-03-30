@@ -55,7 +55,7 @@ class BasicNet:
             relu_gain = nn.init.calculate_gain('relu')
             if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
                 nn.init.orthogonal(layer.weight.data, relu_gain)
-            nn.init.constant(layer.bias.data, 0)
+                nn.init.constant(layer.bias.data, 0)
 
 # Base class for value based methods
 class VanillaNet(BasicNet):

@@ -26,6 +26,35 @@ class NatureConvNet(nn.Module, VanillaNet):
         y = F.relu(self.fc4(y))
         return self.fc5(y)
 
+# Network for pixel Atari game with value based methods
+class NatureConvNetGRU(nn.Module, VanillaNet):
+    def __init__(self, in_channels, n_actions, gpu=0):
+        super(NatureConvNetGRU, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
+        self.fc4 = nn.Linear(7 * 7 * 64, 512)
+        self.gru = nn.GRUCell(512,512)
+        self.fc5 = nn.Linear(512, n_actions)
+        BasicNet.__init__(self, gpu, LSTM=True)
+
+        nn.init.orthogonal(self.gru.weight_ih)
+        nn.init.orthogonal(self.gru.weight_hh)
+        self.gru.bias_ih.data.fill_(0)
+        self.gru.bias_hh.data.fill_(0)
+
+        self.h = self.variable(np.zeros((1, 512)))
+
+    def forward(self, x):
+        x = self.variable(x)
+        y = F.relu(self.conv1(x))
+        y = F.relu(self.conv2(y))
+        y = F.relu(self.conv3(y))
+        y = y.view(y.size(0), -1)
+        y = F.relu(self.fc4(y))
+        self.h = self.gru(y,self.h)
+        return self.fc5(self.h)
+
 # Network for pixel Atari game with dueling architecture
 class DuelingNatureConvNet(nn.Module, DuelingNet):
     def __init__(self, in_channels, n_actions, gpu=0):
@@ -162,3 +191,33 @@ class CategoricalConvNet(nn.Module, CategoricalNet):
         y = y.view(y.size(0), -1)
         y = F.relu(self.fc4(y))
         return y
+
+class CategoricalConvNetGRU(nn.Module, CategoricalNet):
+    def __init__(self, in_channels, n_actions, n_atoms, gpu=0):
+        super(CategoricalConvNetGRU, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
+        self.fc4 = nn.Linear(7 * 7 * 64, 512)
+        self.gru = nn.GRUCell(512,512)
+        self.fc_categorical = nn.Linear(512, n_actions * n_atoms)
+        self.n_actions = n_actions
+        self.n_atoms = n_atoms
+        BasicNet.__init__(self, gpu)
+
+        nn.init.orthogonal(self.gru.weight_ih)
+        nn.init.orthogonal(self.gru.weight_hh)
+        self.gru.bias_ih.data.fill_(0)
+        self.gru.bias_hh.data.fill_(0)
+
+        self.h = self.variable(np.zeros((1, 512)))
+
+    def forward(self, x):
+        x = self.variable(x)
+        y = F.relu(self.conv1(x))
+        y = F.relu(self.conv2(y))
+        y = F.relu(self.conv3(y))
+        y = y.view(y.size(0), -1)
+        y = F.relu(self.fc4(y))
+        self.h = self.gru(y,self.h)
+        return F.relu(self.h)
