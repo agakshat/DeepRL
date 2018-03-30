@@ -104,7 +104,7 @@ def dqn_pixel_atari(name,args):
     config.network_fn = lambda: NatureConvNet(config.history_length, action_dim, gpu=0)
     # config.network_fn = lambda: DuelingNatureConvNet(config.history_length, action_dim)
     config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
-    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
+    config.replay_fn = lambda: Replay(memory_size=int(args.memory_size), batch_size=32, dtype=np.uint8)
     config.reward_shift_fn = lambda r: np.sign(r)
     config.discount = 0.99
     config.target_network_update_freq = 10000
@@ -428,7 +428,7 @@ def categorical_dqn_pixel_atari(name,args):
     config.optimizer_fn = lambda params: torch.optim.Adam(params, lr=0.00025, eps=0.01 / 32)
     config.network_fn = lambda: CategoricalConvNet(config.history_length, action_dim, config.categorical_n_atoms, gpu=0)
     config.policy_fn = lambda: GreedyPolicy(epsilon=1.0, final_step=1000000, min_epsilon=0.1)
-    config.replay_fn = lambda: Replay(memory_size=100000, batch_size=32, dtype=np.uint8)
+    config.replay_fn = lambda: Replay(memory_size=int(args.memory_size), batch_size=32, dtype=np.uint8)
     config.reward_shift_fn = lambda r: np.sign(r)
     config.discount = 0.99
     config.target_network_update_freq = 10000
@@ -545,6 +545,8 @@ if __name__ == '__main__':
                         help='directory to save agent logs (default: ./logs/')
     parser.add_argument('--save-dir', default='./trained_models/',
                         help='directory to save agent logs (default: ./trained_models/)')
+    parser.add_argument('--memory-size', type=float, default=1e7,
+                        help='number of frames to train (default: 1e7)')
     args = parser.parse_args()
     # dqn_cart_pole()
     # categorical_dqn_cart_pole()
